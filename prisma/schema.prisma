@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------
+// ENUMS
+// ------------------------------------------------------
+
+enum EstadoTrabajo {
+  Pendiente
+  Terminado // Antes usabas 'Finalizado', ahora será 'Terminado'
+  Cancelado
+}
+
+enum Capacidad {
+  Nestle
+  Molitalia
+  Ambos
+}
+
+enum Asistencia {
+  Pendiente
+  Si
+  No
+  Tardanza
+}
+
+// ------------------------------------------------------
+// MODELOS
+// ------------------------------------------------------
+
+model Rol {
+  id       Int       @id @default(autoincrement())
+  nombre   String    @db.VarChar(50)
+  usuarios Usuario[]
+
+  @@map("roles")
+}
+
+model Usuario {
+  id         Int      @id @default(autoincrement())
+  fk_rol     Int
+  email      String   @unique @db.VarChar(100)
+  contrasena String   @db.VarChar(255)
+  estado     Boolean  @default(true)
+  avatar_url String?  @db.VarChar(255)
+
+  // Relaciones
+  rol     Rol      @relation(fields: [fk_rol], references: [id])
+  persona Persona?
+
+  // 👇 NUEVO: Relación inversa para saber qué asignaciones creó este usuario
+  asignaciones_creadas Asignacion[] @relation("CreadorAsignacion")
+
+  @@map("usuarios")
+}
+
+model Persona {
+  id               Int       @id @default(autoincrement())
+  fk_usuario       Int?      @unique
+  nombre           String    @db.VarChar(100)
+  apellido         String    @db.VarChar(100)
+  dni              String    @unique @db.VarChar(20)
+  telefono         String?   @db.VarChar(20)
+  fecha_nacimiento DateTime? @db.Date
+
+  distrito       String?    @db.VarChar(100)
+  capacidad      Capacidad?
+  imo            Boolean    @default(false)
+  activo_empresa Boolean    @default(true)
+
+  usuario             Usuario?            @relation(fields: [fk_usuario], references: [id])
+  detalles_asignacion DetalleAsignacion[]
+
+  @@map("personas")
+}
+
+model Empresa {
+  id           Int    @id @default(autoincrement())
+  razon_social String @db.VarChar(150)
+  ruc          String @db.VarChar(20)
+  sedes        Sede[]
+
+  @@map("empresas")
+}
+
+model Sede {
+  id          Int     @id @default(autoincrement())
+  empresa_id  Int
+  nombre_sede String  @db.VarChar(100)
+  direccion   String? @db.VarChar(255)
+
+  empresa        Empresa         @relation(fields: [empresa_id], references: [id], onDelete: Cascade)
+  requerimientos Requerimiento[]
+
+  @@map("sedes")
+}
+
+model Requerimiento {
+  id                Int      @id @default(autoincrement())
+  sede_id           Int
+  hora_inicio       DateTime @db.Time
+  hora_fin          DateTime @db.Time
+  fecha_servicio    DateTime @db.Date
+  cantidad_personal Int
+  herramienta       String?  @db.Text
+  viatico           Decimal? @db.Decimal(10, 2)
+  adicional         Decimal? @db.Decimal(10, 2)
+  extra_info        String?  @db.Text
+
+  sede         Sede         @relation(fields: [sede_id], references: [id])
+  asignaciones Asignacion[]
+
+  @@map("requerimientos")
+}
+
+model Asignacion {
+  id               Int      @id @default(autoincrement())
+  requerimiento_id Int
+  estado_trabajo   EstadoTrabajo @default(Pendiente)
+  pdf_url          String?  @db.VarChar(255)
+  extra_info       String?  @db.Text
+  fecha_creacion   DateTime @default(now()) @db.Timestamp(0)
+
+  // 👇 NUEVO: Campos para guardar quién creó la asignación
+  creado_por_id Int?     // Es opcional (?) para que no fallen los registros viejos
+  creado_por    Usuario? @relation("CreadorAsignacion", fields: [creado_por_id], references: [id])
+
+  requerimiento       Requerimiento       @relation(fields: [requerimiento_id], references: [id], onDelete: Cascade)
+  detalles_asignacion DetalleAsignacion[]
+
+  @@map("asignaciones")
+}
+
+model DetalleAsignacion {
+  asignacion_id Int
+  persona_id    Int
+  asistencia    Asistencia @default(Pendiente)
+
+  asignacion Asignacion @relation(fields: [asignacion_id], references: [id], onDelete: Cascade)
+  persona    Persona    @relation(fields: [persona_id], references: [id])
+
+  @@id([asignacion_id, persona_id])
+  @@map("detalles_asignacion")
+}
