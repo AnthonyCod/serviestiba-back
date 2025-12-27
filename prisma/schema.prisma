@@ -13,7 +13,7 @@ datasource db {
 
 enum EstadoTrabajo {
   Pendiente
-  Terminado // Antes usabas 'Finalizado', ahora será 'Terminado'
+  Terminado 
   Cancelado
 }
 
@@ -30,13 +30,19 @@ enum Asistencia {
   Tardanza
 }
 
+enum RolNombre {
+  Admin
+  Encargado
+  Trabajador
+}
+
 // ------------------------------------------------------
 // MODELOS
 // ------------------------------------------------------
 
 model Rol {
   id       Int       @id @default(autoincrement())
-  nombre   String    @db.VarChar(50)
+  nombre   RolNombre
   usuarios Usuario[]
 
   @@map("roles")
@@ -62,15 +68,15 @@ model Usuario {
 
 model Persona {
   id               Int       @id @default(autoincrement())
-  fk_usuario       Int?      @unique
+  fk_usuario       Int      @unique
   nombre           String    @db.VarChar(100)
   apellido         String    @db.VarChar(100)
-  dni              String    @unique @db.VarChar(20)
-  telefono         String?   @db.VarChar(20)
-  fecha_nacimiento DateTime? @db.Date
+  dni              String    @unique @db.VarChar(8)
+  telefono         String   @db.VarChar(15)
+  fecha_nacimiento DateTime @db.Date
 
-  distrito       String?    @db.VarChar(100)
-  capacidad      Capacidad?
+  distrito       String    @db.VarChar(100)
+  capacidad      Capacidad
   imo            Boolean    @default(false)
   activo_empresa Boolean    @default(true)
 
@@ -93,7 +99,7 @@ model Sede {
   id          Int     @id @default(autoincrement())
   empresa_id  Int
   nombre_sede String  @db.VarChar(100)
-  direccion   String? @db.VarChar(255)
+  direccion   String @db.VarChar(255)
 
   empresa        Empresa         @relation(fields: [empresa_id], references: [id], onDelete: Cascade)
   requerimientos Requerimiento[]

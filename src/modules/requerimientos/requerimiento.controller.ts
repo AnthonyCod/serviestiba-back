@@ -1,35 +1,51 @@
-import type { Response } from 'express';
-import type { RequestExt } from '../../common/middlewares/auth.middleware.js';
-import * as service from './requerimiento.service.js';
+import type { Request, Response } from 'express';
+import { RequerimientoService } from './requerimiento.service.js';
+import { CreateRequerimientoDto } from './dtos/requerimiento.dto.js';
 
-export const getRequerimientos = async (req: RequestExt, res: Response) => {
-  try {
-    const data = await service.getAll();
-    res.json(data);
-  } catch (e: any) {
-    res.status(500).json({ error: e.message });
+export class RequerimientoController {
+  private service: RequerimientoService;
+
+  constructor() {
+    this.service = new RequerimientoService();
   }
-};
 
-export const getReqById = async (req: RequestExt, res: Response) => {
-  try {
-    const { id } = req.params;
-    const data = await service.getById(Number(id));
-    if (!data) {
-      res.status(404).json({ error: 'Requerimiento no encontrado' });
-      return;
+  // GET /
+  getRequerimientos = async (_req: Request, res: Response) => {
+    try {
+      const data = await this.service.findAll();
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
-    res.json(data);
-  } catch (e: any) {
-    res.status(500).json({ error: e.message });
-  }
-};
+  };
 
-export const createRequerimiento = async (req: RequestExt, res: Response) => {
-  try {
-    const nuevo = await service.create(req.body);
-    res.status(201).json(nuevo);
-  } catch (e: any) {
-    res.status(400).json({ error: e.message });
-  }
-};
+  // GET /:id
+  getReqById = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const data = await this.service.findOne(Number(id));
+      
+      if (!data) {
+        res.status(404).json({ error: 'Requerimiento no encontrado' });
+        return;
+      }
+      
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  };
+
+  // POST /
+  // Tipamos explícitamente el Body con el DTO
+  createRequerimiento = async (req: Request<unknown, unknown, CreateRequerimientoDto>, res: Response) => {
+    try {
+      // Ya no necesitamos validar manual, el middleware validateSchema lo hizo
+      const nuevo = await this.service.create(req.body);
+      res.status(201).json(nuevo);
+    } catch (error: any) {
+      // Prisma errors o lógica de negocio
+      res.status(400).json({ error: error.message });
+    }
+  };
+}

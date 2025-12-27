@@ -1,0 +1,757 @@
+openapi: 3.0.0
+info:
+  title: API Modular Serviestiba
+  version: 1.0.0
+  description: Documentación centralizada del Backend - Módulos: Auth, Requerimientos, Asignaciones
+servers:
+  - url: http://localhost:3000
+    description: Servidor Local
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      example:
+        error: Mensaje de error
+
+    # --- AUTH ---
+    LoginInput:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: admin@test.com
+        password:
+          type: string
+          example: 123456
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT de acceso
+        user:
+          $ref: '#/components/schemas/UsuarioPublic'
+      example:
+        token: eyJhbGciOiJI...
+        user:
+          id: 1
+          email: admin@test.com
+          fk_rol: 1
+          persona:
+            nombre: Admin
+            apellido: Demo
+
+    UsuarioPublic:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        fk_rol:
+          type: integer
+        persona:
+          type: object
+          properties:
+            nombre:
+              type: string
+            apellido:
+              type: string
+
+    # --- ENTIDADES REQUERIMIENTO ---
+    Requerimiento:
+      type: object
+      properties:
+        id:
+          type: integer
+        sede:
+          $ref: '#/components/schemas/Sede'
+        fecha_servicio:
+          type: string
+          format: date
+          description: Fecha del servicio
+        hora_inicio:
+          type: string
+          format: date-time
+          description: Hora de inicio (almacenada como Date)
+        hora_fin:
+          type: string
+          format: date-time
+          description: Hora de fin (almacenada como Date)
+        cantidad_personal:
+          type: integer
+        extra_info:
+          type: string
+          nullable: true
+        herramienta:
+          type: string
+          nullable: true
+        viatico:
+          type: number
+          nullable: true
+        adicional:
+          type: number
+          nullable: true
+        asignaciones:
+          type: array
+          items:
+            $ref: '#/components/schemas/AsignacionSimple'
+      example:
+        id: 42
+        sede:
+          id: 3
+          nombre: "Sede Lima"
+          empresa:
+            id: 1
+            nombre: "Empresa Demo"
+        fecha_servicio: "2023-11-20"
+        hora_inicio: "1970-01-01T09:00:00Z"
+        hora_fin: "1970-01-01T17:00:00Z"
+        cantidad_personal: 3
+        extra_info: "Traer herramientas"
+        herramienta: "taladro"
+        viatico: 50
+        adicional: 0
+
+    RequerimientoInput:
+      type: object
+      required:
+        - sede_id
+        - hora_inicio
+        - hora_fin
+        - fecha_servicio
+        - cantidad_personal
+      properties:
+        sede_id:
+          type: integer
+          example: 3
+        hora_inicio:
+          type: string
+          description: Hora en formato HH:MM (ej. "09:00")
+          example: "09:00"
+        hora_fin:
+          type: string
+          description: Hora en formato HH:MM (ej. "17:00")
+          example: "17:00"
+        fecha_servicio:
+          type: string
+          format: date
+          example: "2023-11-20"
+        cantidad_personal:
+          type: integer
+          example: 3
+        extra_info:
+          type: string
+          nullable: true
+          example: "Info adicional"
+        herramienta:
+          type: string
+          nullable: true
+          example: "taladro"
+        viatico:
+          type: number
+          nullable: true
+          example: 50
+        adicional:
+          type: number
+          nullable: true
+          example: 0
+      example:
+        sede_id: 3
+        hora_inicio: "09:00"
+        hora_fin: "17:00"
+        fecha_servicio: "2023-11-20"
+        cantidad_personal: 3
+        extra_info: "Detalle del requerimiento"
+
+    # --- ENTIDADES ASIGNACION ---
+    Asignacion:
+      type: object
+      properties:
+        id:
+          type: integer
+        requerimiento:
+          $ref: '#/components/schemas/Requerimiento'
+        estado_trabajo:
+          type: string
+          example: "Pendiente"
+        extra_info:
+          type: string
+          nullable: true
+        creado_por:
+          type: object
+          properties:
+            email:
+              type: string
+            persona:
+              type: object
+              properties:
+                nombre:
+                  type: string
+                apellido:
+                  type: string
+      example:
+        id: 10
+        requerimiento:
+          id: 42
+          fecha_servicio: "2023-11-20"
+          cantidad_personal: 3
+        estado_trabajo: "Pendiente"
+        extra_info: null
+        creado_por:
+          email: encargado@test.com
+          persona:
+            nombre: "Juan"
+            apellido: "Perez"
+
+    AsignacionSimple:
+      type: object
+      properties:
+        id:
+          type: integer
+        estado_trabajo:
+          type: string
+        creado_por:
+          type: object
+          properties:
+            email:
+              type: string
+            persona:
+              type: object
+              properties:
+                nombre:
+                  type: string
+                apellido:
+                  type: string
+
+    CrearAsignacionDTO:
+      type: object
+      required:
+        - requerimiento_id
+        - trabajadores_ids
+      properties:
+        requerimiento_id:
+          type: integer
+          example: 42
+        trabajadores_ids:
+          type: array
+          items:
+            type: integer
+          example: [11, 12, 13]
+        extra_info:
+          type: string
+          nullable: true
+          example: "Observaciones"
+      example:
+        requerimiento_id: 42
+        trabajadores_ids: [11, 12, 13]
+        extra_info: "Por favor presentarse 30 min antes"
+
+    DetalleAsistenciaUpdate:
+      type: object
+      required:
+        - asignacionId
+        - personaId
+        - estado
+      properties:
+        asignacionId:
+          type: integer
+          example: 10
+        personaId:
+          type: integer
+          example: 11
+        estado:
+          type: string
+          enum: [Si, No, Tardanza]
+          example: Si
+
+    UpdateEstadoDTO:
+      type: object
+      required:
+        - estado
+      properties:
+        estado:
+          type: string
+          description: "Nuevo estado de la asignación (ej. Cancelado, Finalizado, Pendiente, etc.)"
+          example: "Finalizado"
+
+    # --- ENTIDADES AUXILIARES ---
+    Persona:
+      type: object
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+        apellido:
+          type: string
+      example:
+        id: 11
+        nombre: "Carlos"
+        apellido: "Lopez"
+
+    Sede:
+      type: object
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+        empresa:
+          $ref: '#/components/schemas/Empresa'
+      example:
+        id: 3
+        nombre: "Sede Lima"
+        empresa:
+          id: 1
+          nombre: "Empresa Demo"
+
+    Empresa:
+      type: object
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+      example:
+        id: 1
+        nombre: "Empresa Demo"
+
+paths:
+  # -----------------------
+  # AUTH
+  # -----------------------
+  /api/auth/login:
+    post:
+      summary: Iniciar Sesión
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+      responses:
+        '200':
+          description: Login exitoso - retorna token y usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '403':
+          description: Credenciales incorrectas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Credenciales incorrectas
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Error del servidor
+
+  # -----------------------
+  # REQUERIMIENTOS
+  # -----------------------
+  /api/requerimientos:
+    get:
+      summary: Listar requerimientos
+      tags:
+        - Requerimientos
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de requerimientos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Requerimiento'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Crear requerimiento
+      tags:
+        - Requerimientos
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequerimientoInput'
+      responses:
+        '201':
+          description: Requerimiento creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Requerimiento'
+        '400':
+          description: Bad request / validación fallida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/requerimientos/{id}:
+    get:
+      summary: Obtener detalle de un requerimiento por ID
+      tags:
+        - Requerimientos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalle del requerimiento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Requerimiento'
+        '404':
+          description: Requerimiento no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Requerimiento no encontrado
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # -----------------------
+  # ASIGNACIONES
+  # -----------------------
+  /api/asignaciones:
+    post:
+      summary: Crear Asignación (Firma del encargado)
+      tags:
+        - Asignaciones
+      security:
+        - bearerAuth: []
+      description: |
+        Crea una asignación para un requerimiento. El ID del encargado (creador) se toma del token (req.user.id).
+        **Nota**: este endpoint normalmente está restringido al rol "Encargado".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearAsignacionDTO'
+      responses:
+        '201':
+          description: Asignación creada y firmada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Asignacion'
+                example:
+                  message: Asignación creada y firmada
+                  data:
+                    id: 10
+                    estado_trabajo: "Pendiente"
+                    creado_por:
+                      email: encargado@test.com
+                      persona:
+                        nombre: "Juan"
+                        apellido: "Perez"
+        '400':
+          description: Validación/Negocio falló (ej. cruce de horarios, cantidad incorrecta)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: Listar todas las asignaciones
+      tags:
+        - Asignaciones
+      security:
+        - bearerAuth: []
+      description: Lista todas las asignaciones (puede ser usada por Admin o usuarios autorizados).
+      responses:
+        '200':
+          description: Lista de asignaciones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Asignacion'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/asignaciones/reporte:
+    get:
+      summary: Reporte para Admin (auditoría)
+      tags:
+        - Asignaciones
+      security:
+        - bearerAuth: []
+      description: |
+        Parámetros `inicio` y `fin` son obligatorios (fechas). Opcional: `encargado` (ID del creado_por) y `estado`.
+        Requiere permisos de Admin para su uso correcto.
+      parameters:
+        - in: query
+          name: inicio
+          required: true
+          schema:
+            type: string
+            format: date
+          description: Fecha inicio (YYYY-MM-DD)
+        - in: query
+          name: fin
+          required: true
+          schema:
+            type: string
+            format: date
+          description: Fecha fin (YYYY-MM-DD)
+        - in: query
+          name: encargado
+          required: false
+          schema:
+            type: integer
+          description: ID del encargado (creado_por_id)
+        - in: query
+          name: estado
+          required: false
+          schema:
+            type: string
+          description: Filtrar por estado_trabajo
+      responses:
+        '200':
+          description: Reporte generado
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Asignacion'
+        '400':
+          description: Faltan fechas u otro parámetro obligatorio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Faltan fechas (?inicio=...&fin=...)
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/asignaciones/asistencia:
+    patch:
+      summary: Marcar asistencia (detalle asignación)
+      tags:
+        - Asignaciones
+      security:
+        - bearerAuth: []
+      description: Marca la asistencia de una persona en una asignación. Roles: Encargado / autorizado.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DetalleAsistenciaUpdate'
+      responses:
+        '200':
+          description: Asistencia actualizada
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  asistencia: "Si"
+        '400':
+          description: Error al marcar asistencia
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Error al marcar asistencia
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/asignaciones/{id}:
+    get:
+      summary: Obtener detalle de una asignación
+      tags:
+        - Asignaciones
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalle de asignación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asignacion'
+        '404':
+          description: Asignación no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/asignaciones/{id}/estado:
+    patch:
+      summary: Cambiar estado de una asignación (Cancelar/Finalizar)
+      tags:
+        - Asignaciones
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEstadoDTO'
+      responses:
+        '200':
+          description: Estado actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  id: 10
+                  estado_trabajo: "Finalizado"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

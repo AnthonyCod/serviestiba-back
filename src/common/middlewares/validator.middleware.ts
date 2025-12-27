@@ -1,16 +1,32 @@
 import type { Request, Response, NextFunction } from 'express';
-import type { ZodSchema } from 'zod';
+import { ZodError } from 'zod';
+import type { ZodType } from 'zod';
 
-export const validate = (schema: ZodSchema) => (req: Request, res: Response, next: NextFunction) => {
+export const validate = (schema: ZodType) => (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    // Intenta parsear el body con el esquema de Zod
-    schema.parse(req.body);
-    next();
-  } catch (error: any) {
-    // Si falla, devuelve error 400 con los detalles
-    return res.status(400).json({ 
-      error: 'Datos inválidos', 
-      details: error.errors.map((e: any) => ({ field: e.path[0], message: e.message }))
+    schema.parse({
+      body: req.body,
+      query: req.query,
+      params: req.params,
     });
+    next();
+  } catch (error) {
+    // 1. Verificamos si es una instancia de ZodError
+    if (error instanceof ZodError) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Datos inválidos',
+        errors: error.issues.map((issue) => ({
+          field: issue.path.join('.'),
+          message: issue.message,
+        })),
+      });
+    }
+
+    next(error);
   }
 };

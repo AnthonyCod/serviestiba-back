@@ -1,18 +1,28 @@
 import type { Request, Response } from 'express';
-import { loginUser } from './auth.service.js';
+import { AuthService } from './auth.service.js';
+import { LoginDto } from './dtos/auth.dto.js';
 
-export const login = async (req: Request, res: Response) => {
-  try {
-    const { email, password } = req.body;
-    const response = await loginUser({ email, password });
+export class AuthController {
+  private service: AuthService;
 
-    if (response === 'NOT_FOUND' || response === 'WRONG_PASS') {
-      res.status(403).json({ error: 'Credenciales incorrectas' });
-      return;
-    }
-
-    res.json(response);
-  } catch (e) {
-    res.status(500).json({ error: 'Error del servidor' });
+  constructor() {
+    this.service = new AuthService();
   }
-};
+
+  // Usamos arrow function para mantener el contexto 'this'
+  login = async (req: Request<unknown, unknown, LoginDto>, res: Response) => {
+    try {
+      const result = await this.service.login(req.body);
+      res.json(result);
+    } catch (error: any) {
+      // Manejo de errores de negocio
+      if (error.message === 'INVALID_CREDENTIALS') {
+        res.status(401).json({ error: 'Credenciales incorrectas' });
+      } else {
+        // Error inesperado (BD caída, bug, etc.)
+        console.error(error); // Es bueno loguear el error real en servidor
+        res.status(500).json({ error: 'Error interno del servidor' });
+      }
+    }
+  };
+}

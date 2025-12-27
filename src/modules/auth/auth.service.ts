@@ -1,25 +1,47 @@
 import prisma from '../../config/prisma.js';
 import bcrypt from 'bcryptjs';
-import { generateToken } from '../../common/utils/jwt.handle.js';
+import { generateToken } from '../../common/utils/jwt.handle.js'; 
+import { LoginDto } from './dtos/auth.dto.js';
 
-export const loginUser = async ({ email, password }: any) => {
-  // 1. Buscar
-  const user = await prisma.usuario.findUnique({
-    where: { email },
-    include: { persona: true, rol: true } // Datos extra para el front
-  });
-
-  if (!user) return 'NOT_FOUND';
-
-  // 2. Verificar password
-  const isCorrect = await bcrypt.compare(password, user.contrasena);
-  if (!isCorrect) return 'WRONG_PASS';
-
-  // 3. Generar token
-const token = generateToken({ id: user.id, fk_rol: user.fk_rol });
+export class AuthService {
   
-  // 4. Limpiar respuesta (quitar password)
-  const { contrasena, ...userData } = user;
+  async login(data: LoginDto) {
+    console.log("------------------------------------------------");
+    console.log("🔍 INTENTO DE LOGIN:");
+    console.log("📧 Email recibido:", data.email);
+    console.log("🔑 Password recibido:", data.password);
 
-  return { token, user: userData };
-};
+    // 1. Buscar usuario
+    const user = await prisma.usuario.findUnique({
+      where: { email: data.email },
+      include: { persona: true, rol: true }
+    });
+
+    if (!user) {
+      console.log("❌ ERROR: El usuario NO existe en la BD.");
+      throw new Error('INVALID_CREDENTIALS');
+    } 
+
+    console.log("✅ Usuario encontrado:", user.email);
+    console.log("🔒 Hash en BD:", user.contrasena);
+
+    // 2. Comparar contraseñas
+    const isCorrect = await bcrypt.compare(data.password, user.contrasena);
+    
+    console.log("⚖️ ¿Contraseña válida?:", isCorrect);
+    console.log("------------------------------------------------");
+
+    if (!isCorrect) {
+      console.log("❌ ERROR: Contraseña incorrecta.");
+      throw new Error('INVALID_CREDENTIALS');
+    }
+
+    // 3. Generar token
+    const token = generateToken({ id: user.id, fk_rol: user.fk_rol });
+
+    // 4. Limpiar password antes de enviarlo
+    const { contrasena, ...userWithoutPass } = user;
+
+    return { token, user: userWithoutPass };
+  }
+}

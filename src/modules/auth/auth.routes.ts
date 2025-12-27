@@ -1,10 +1,15 @@
 import { Router } from 'express';
-import { login } from './auth.controller.js';
-import { validate } from '../../common/middlewares/validator.middleware.js'; // Importar
-import { loginSchema } from './auth.schema.js'; // Importar
+import { AuthController } from './auth.controller.js';
+import { validate } from '../../common/middlewares/validator.middleware.js';
+import { loginSchema } from './schemas/auth.schema.js';
 
 const router = Router();
-// Inyectamos validate(loginSchema) antes del controller
-router.post('/login', validate(loginSchema), login); 
+const controller = new AuthController();
+
+router.post(
+  '/login', 
+  validate(loginSchema), // 1. Valida estructura
+  controller.login       // 2. Ejecuta lógica
+);
 
 export default router;
