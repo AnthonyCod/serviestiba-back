@@ -6,7 +6,7 @@ export class AsignacionService {
 
   // 1. Crear Asignación (Compleja)
   async create(data: CreateAsignacionDto, creadorId: number) {
-    
+
     // A. Validar Requerimiento
     const req = await prisma.requerimiento.findUnique({
       where: { id: data.requerimiento_id },
@@ -15,7 +15,7 @@ export class AsignacionService {
 
     if (!req) throw new Error("REQ_NOT_FOUND"); // Controlado en Controller
     if (req.asignaciones.length > 0) throw new Error("REQ_ALREADY_ASSIGNED");
-    
+
     // Validar Cantidad Exacta
     if (req.cantidad_personal !== data.trabajadores_ids.length) {
       throw new Error(`QUANTITY_MISMATCH: Esperado ${req.cantidad_personal}, Recibido ${data.trabajadores_ids.length}`);
@@ -36,8 +36,8 @@ export class AsignacionService {
       throw new Error("INVALID_WORKER_IDS");
     }
 
-    const errores: string[] = []; 
-    
+    const errores: string[] = [];
+
     for (const trabajador of trabajadores) {
       // 1. Validar Rol (3 = Trabajador)
       if (trabajador.usuario?.fk_rol !== 3) {
@@ -48,9 +48,9 @@ export class AsignacionService {
       // 2. Validar Cruce de Horarios (Tu lógica original preservada)
       const cruce = trabajador.detalles_asignacion.find((detalle) => {
         if (detalle.asignacion.estado_trabajo === 'Cancelado') return false;
-        
+
         const otroReq = detalle.asignacion.requerimiento;
-        
+
         // Comparar Fechas (String YYYY-MM-DD)
         const fechaNueva = req.fecha_servicio.toISOString().split('T')[0];
         const fechaVieja = otroReq.fecha_servicio.toISOString().split('T')[0];
@@ -86,8 +86,8 @@ export class AsignacionService {
           creado_por_id: creadorId,
         },
         include: {
-          creado_por: { 
-            select: { email: true, persona: { select: { nombre: true, apellido: true } } } 
+          creado_por: {
+            select: { email: true, persona: { select: { nombre: true, apellido: true } } }
           }
         }
       });
@@ -134,11 +134,11 @@ export class AsignacionService {
   // 3. Métodos estándar
   async updateAsistencia(data: UpdateAsistenciaDto) {
     return await prisma.detalleAsignacion.update({
-      where: { 
-        asignacion_id_persona_id: { 
-          asignacion_id: data.asignacionId, 
-          persona_id: data.personaId 
-        } 
+      where: {
+        asignacion_id_persona_id: {
+          asignacion_id: data.asignacionId,
+          persona_id: data.personaId
+        }
       },
       data: { asistencia: data.estado }
     });
@@ -146,10 +146,14 @@ export class AsignacionService {
 
   async getAll() {
     return await prisma.asignacion.findMany({
-      include: { 
-        creado_por: true, 
-        requerimiento: { include: { sede: { include: { empresa: true } } } }, 
-        detalles_asignacion: { include: { persona: true } } 
+      include: {
+        creado_por: {
+          include: {
+            persona: true
+          }
+        },
+        requerimiento: { include: { sede: { include: { empresa: true } } } },
+        detalles_asignacion: { include: { persona: true } }
       },
       orderBy: { id: 'desc' }
     });
@@ -158,18 +162,30 @@ export class AsignacionService {
   async getById(id: number) {
     return await prisma.asignacion.findUnique({
       where: { id },
-      include: { 
-        requerimiento: { include: { sede: true } }, 
-        detalles_asignacion: { include: { persona: true } } 
+      include: {
+        creado_por: {
+          include: {
+            persona: true
+          }
+        },
+        requerimiento: { include: { sede: { include: { empresa: true } } } },
+        detalles_asignacion: { include: { persona: true } }
       }
+    });
+  }
+
+  async updateEvidencia(id: number, data: { extra_info?: string; pdf_url?: string }) {
+    return await prisma.asignacion.update({
+      where: { id },
+      data
     });
   }
 
   // Se infiere el tipo de EstadoTrabajo desde prisma o string validado
   async updateEstado(id: number, nuevoEstado: any) {
-    return await prisma.asignacion.update({ 
-      where: { id }, 
-      data: { estado_trabajo: nuevoEstado } 
+    return await prisma.asignacion.update({
+      where: { id },
+      data: { estado_trabajo: nuevoEstado }
     });
   }
 }

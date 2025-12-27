@@ -1,7 +1,7 @@
 import type { Response, Request } from 'express';
 import { AsignacionService } from './asignacion.service.js';
 import type { RequestExt } from '../../common/middlewares/auth.middleware.js';
-import { CreateAsignacionDto,ReporteFilterDto,UpdateAsistenciaDto } from './dtos/asignacion.dto.js';
+import { CreateAsignacionDto, ReporteFilterDto, UpdateAsistenciaDto } from './dtos/asignacion.dto.js';
 
 export class AsignacionController {
   private service: AsignacionService;
@@ -15,18 +15,18 @@ export class AsignacionController {
     try {
       const usuarioId = req.user!.id; // ! porque checkAuth garantiza que existe
       const body = req.body as CreateAsignacionDto;
-      
+
       const nueva = await this.service.create(body, usuarioId);
       res.status(201).json({ message: 'Asignación creada exitosamente', data: nueva });
-      
+
     } catch (error: any) {
       // Manejo de errores complejos (Array de strings de validación)
       if (error.message.includes('VALIDATION_ERROR')) {
         const parsed = JSON.parse(error.message);
         res.status(400).json({ error: 'Errores de validación', details: parsed.details });
-        return; 
+        return;
       }
-      
+
       // Errores conocidos simples
       const errorMap: Record<string, string> = {
         'REQ_NOT_FOUND': 'El requerimiento no existe',
@@ -86,9 +86,9 @@ export class AsignacionController {
       // SOLUCIÓN: Agregamos || '' aquí también
       const id = parseInt(req.params.id || '');
       const data = await this.service.getById(id);
-      if(!data) { 
-        res.status(404).json({error: 'No encontrada'}); 
-        return; 
+      if (!data) {
+        res.status(404).json({ error: 'No encontrada' });
+        return;
       }
       res.json(data);
     } catch (error: any) {
@@ -102,6 +102,25 @@ export class AsignacionController {
       res.json(lista);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  };
+  subirEvidencia = async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id || '');
+      const extra_info = req.body.extra_info;
+
+      const data: any = {};
+      if (extra_info !== undefined) data.extra_info = extra_info;
+
+      if (req.file) {
+        data.pdf_url = `uploads/evidencias/${req.file.filename}`;
+      }
+
+      const updated = await this.service.updateEvidencia(id, data);
+      res.json(updated);
+    } catch (error: any) {
+      console.error('Error subiendo evidencia:', error);
+      res.status(500).json({ error: 'Error al subir evidencia' });
     }
   };
 }

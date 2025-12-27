@@ -1,10 +1,10 @@
 import prisma from '../../config/prisma.js';
 import bcrypt from 'bcryptjs';
-import { generateToken } from '../../common/utils/jwt.handle.js'; 
+import { generateToken } from '../../common/utils/jwt.handle.js';
 import { LoginDto } from './dtos/auth.dto.js';
 
 export class AuthService {
-  
+
   async login(data: LoginDto) {
     console.log("------------------------------------------------");
     console.log("🔍 INTENTO DE LOGIN:");
@@ -20,14 +20,14 @@ export class AuthService {
     if (!user) {
       console.log("❌ ERROR: El usuario NO existe en la BD.");
       throw new Error('INVALID_CREDENTIALS');
-    } 
+    }
 
     console.log("✅ Usuario encontrado:", user.email);
     console.log("🔒 Hash en BD:", user.contrasena);
 
     // 2. Comparar contraseñas
     const isCorrect = await bcrypt.compare(data.password, user.contrasena);
-    
+
     console.log("⚖️ ¿Contraseña válida?:", isCorrect);
     console.log("------------------------------------------------");
 
@@ -42,6 +42,12 @@ export class AuthService {
     // 4. Limpiar password antes de enviarlo
     const { contrasena, ...userWithoutPass } = user;
 
-    return { token, user: userWithoutPass };
+    const response = { token, user: userWithoutPass };
+    console.log("✅ LOGIN EXITOSO - Enviando respuesta:");
+    console.log("📦 Token generado:", token.substring(0, 20) + "...");
+    console.log("👤 Usuario:", userWithoutPass.email);
+    console.log("------------------------------------------------");
+
+    return response;
   }
 }

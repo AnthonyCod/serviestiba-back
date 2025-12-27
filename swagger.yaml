@@ -354,7 +354,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LoginResponse'
-        '403':
+        '401':
           description: Credenciales incorrectas
           content:
             application/json:
@@ -369,7 +369,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: Error del servidor
+                error: Error interno del servidor
 
   # -----------------------
   # REQUERIMIENTOS
@@ -493,7 +493,7 @@ paths:
         - bearerAuth: []
       description: |
         Crea una asignación para un requerimiento. El ID del encargado (creador) se toma del token (req.user.id).
-        **Nota**: este endpoint normalmente está restringido al rol "Encargado".
+        **Requiere rol**: Encargado (Rol 2)
       requestBody:
         required: true
         content:
@@ -534,6 +534,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '403':
+          description: Acceso denegado - Requiere rol de Encargado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
     get:
       summary: Listar todas las asignaciones
@@ -541,7 +547,9 @@ paths:
         - Asignaciones
       security:
         - bearerAuth: []
-      description: Lista todas las asignaciones (puede ser usada por Admin o usuarios autorizados).
+      description: |
+        Lista todas las asignaciones.
+        **Requiere rol**: Admin (Rol 1) o Encargado (Rol 2)
       responses:
         '200':
           description: Lista de asignaciones
@@ -553,6 +561,12 @@ paths:
                   $ref: '#/components/schemas/Asignacion'
         '401':
           description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Acceso denegado - Requiere rol de Admin o Encargado
           content:
             application/json:
               schema:
@@ -572,8 +586,9 @@ paths:
       security:
         - bearerAuth: []
       description: |
+        Genera un reporte de asignaciones filtrado por fechas.
         Parámetros `inicio` y `fin` son obligatorios (fechas). Opcional: `encargado` (ID del creado_por) y `estado`.
-        Requiere permisos de Admin para su uso correcto.
+        **Requiere rol**: Admin (Rol 1)
       parameters:
         - in: query
           name: inicio
@@ -624,6 +639,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '403':
+          description: Acceso denegado - Requiere rol de Admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Error del servidor
           content:
@@ -632,13 +653,13 @@ paths:
                 $ref: '#/components/schemas/Error'
 
   /api/asignaciones/asistencia:
-    patch:
+    put:
       summary: Marcar asistencia (detalle asignación)
       tags:
         - Asignaciones
       security:
         - bearerAuth: []
-      description: Marca la asistencia de una persona en una asignación. Roles: Encargado / autorizado.
+      description: Marca la asistencia de una persona en una asignación. Roles: Encargado (Rol 2).
       requestBody:
         required: true
         content:
@@ -668,6 +689,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '403':
+          description: Acceso denegado - Requiere rol de Encargado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /api/asignaciones/{id}:
     get:
@@ -676,6 +703,9 @@ paths:
         - Asignaciones
       security:
         - bearerAuth: []
+      description: |
+        Obtiene el detalle completo de una asignación específica.
+        **Requiere rol**: Admin (Rol 1) o Encargado (Rol 2)
       parameters:
         - name: id
           in: path
@@ -701,6 +731,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '403':
+          description: Acceso denegado - Requiere rol de Admin o Encargado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Error del servidor
           content:
@@ -715,6 +751,9 @@ paths:
         - Asignaciones
       security:
         - bearerAuth: []
+      description: |
+        Cambia el estado de una asignación (ej. Pendiente, Finalizado, Cancelado).
+        **Requiere rol**: Encargado (Rol 2)
       parameters:
         - name: id
           in: path
@@ -739,6 +778,162 @@ paths:
                   estado_trabajo: "Finalizado"
         '400':
           description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Acceso denegado - Requiere rol de Encargado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # -----------------------
+  # SEDES
+  # -----------------------
+  /api/sedes:
+    get:
+      summary: Listar todas las sedes
+      tags:
+        - Sedes
+      security:
+        - bearerAuth: []
+      description: Obtiene la lista completa de sedes con información de la empresa asociada.
+      responses:
+        '200':
+          description: Lista de sedes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Sede'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/sedes/{id}:
+    get:
+      summary: Obtener una sede por ID
+      tags:
+        - Sedes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalle de la sede
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sede'
+        '404':
+          description: Sede no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # -----------------------
+  # PERSONAS / TRABAJADORES
+  # -----------------------
+  /api/personas/trabajadores:
+    get:
+      summary: Listar todos los trabajadores
+      tags:
+        - Personas
+      security:
+        - bearerAuth: []
+      description: Obtiene la lista de todas las personas con rol de trabajador (Rol 3).
+      responses:
+        '200':
+          description: Lista de trabajadores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Persona'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/personas/{id}:
+    get:
+      summary: Obtener una persona por ID
+      tags:
+        - Personas
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalle de la persona
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Persona'
+        '400':
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Persona no encontrada
           content:
             application/json:
               schema:
