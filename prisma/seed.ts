@@ -305,7 +305,7 @@ async function main() {
             creado_por_id: encargadoUser.id,
             detalles_asignacion: {
                 create: [
-                    { persona_id: personaTrab2.id, asistencia: 'Si' },
+                    { persona_id: personaTrab2.id, asistencia: 'Asistio' },
                     { persona_id: personaTrab1.id, asistencia: 'Tardanza' },
                 ]
             }

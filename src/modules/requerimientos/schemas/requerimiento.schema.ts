@@ -9,9 +9,9 @@ export const createRequerimientoSchema = z.object({
     sede_id: z.number()
       .int()
       .positive(),
-    
+
     fecha_servicio: z.string()
-      .min(1, "La fecha es obligatoria") 
+      .min(1, "La fecha es obligatoria")
       .refine((date) => !isNaN(Date.parse(date)), { message: "Formato de fecha inválido (YYYY-MM-DD)" }),
 
     hora_inicio: z.string()
@@ -27,12 +27,12 @@ export const createRequerimientoSchema = z.object({
       .positive()
       // Usamos .min() para simular un mensaje personalizado si envían 0
       .min(1, "Debe haber al menos 1 persona"),
-    
+
     // Campos opcionales
-    herramienta: z.string().optional(),
-    viatico: z.number().nonnegative().optional(),
-    adicional: z.number().nonnegative().optional(),
-    extra_info: z.string().optional(),
+    herramienta: z.string().nullable().optional(),
+    viatico: z.number().nonnegative().nullable().optional(),
+    adicional: z.number().nonnegative().nullable().optional(),
+    extra_info: z.string().nullable().optional(),
   }),
 });
 
