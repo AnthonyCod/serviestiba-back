@@ -96,7 +96,7 @@ async function main() {
     // 3. Crear Personas asociadas a usuarios
     console.log('👤 Creando personas...');
 
-    await prisma.persona.upsert({
+    const personaAdmin = await prisma.persona.upsert({
         where: { fk_usuario: adminUser.id },
         update: {},
         create: {
@@ -113,7 +113,7 @@ async function main() {
         },
     });
 
-    await prisma.persona.upsert({
+    const personaEncargado = await prisma.persona.upsert({
         where: { fk_usuario: encargadoUser.id },
         update: {},
         create: {
@@ -130,7 +130,7 @@ async function main() {
         },
     });
 
-    await prisma.persona.upsert({
+    const personaTrab1 = await prisma.persona.upsert({
         where: { fk_usuario: trabajador1.id },
         update: {},
         create: {
@@ -147,7 +147,7 @@ async function main() {
         },
     });
 
-    await prisma.persona.upsert({
+    const personaTrab2 = await prisma.persona.upsert({
         where: { fk_usuario: trabajador2.id },
         update: {},
         create: {
@@ -164,7 +164,7 @@ async function main() {
         },
     });
 
-    await prisma.persona.upsert({
+    const personaTrab3 = await prisma.persona.upsert({
         where: { fk_usuario: trabajador3.id },
         update: {},
         create: {
@@ -209,7 +209,7 @@ async function main() {
     // 5. Crear Sedes
     console.log('🏭 Creando sedes...');
 
-    await prisma.sede.upsert({
+    const sede1 = await prisma.sede.upsert({
         where: { id: 1 },
         update: {},
         create: {
@@ -219,7 +219,7 @@ async function main() {
         },
     });
 
-    await prisma.sede.upsert({
+    const sede2 = await prisma.sede.upsert({
         where: { id: 2 },
         update: {},
         create: {
@@ -229,7 +229,7 @@ async function main() {
         },
     });
 
-    await prisma.sede.upsert({
+    const sede3 = await prisma.sede.upsert({
         where: { id: 3 },
         update: {},
         create: {
@@ -241,7 +241,80 @@ async function main() {
 
     console.log('✅ Sedes creadas');
 
-    console.log('\n🎉 Seed completado exitosamente!\n');
+    // 6. Crear Requerimientos (NUEVO)
+    console.log('📋 Creando requerimientos de prueba...');
+
+    // Fechas de prueba
+    const hoy = new Date();
+    const manana = new Date(hoy); manana.setDate(hoy.getDate() + 1);
+
+    // Requerimiento 1: Nestlé Callao (Mañana)
+    const req1 = await prisma.requerimiento.create({
+        data: {
+            sede_id: sede1.id,
+            fecha_servicio: manana,
+            hora_inicio: new Date('1970-01-01T08:00:00Z'),
+            hora_fin: new Date('1970-01-01T17:00:00Z'),
+            cantidad_personal: 3,
+            herramienta: 'Casco, Botas, Chaleco',
+            viatico: 25.00,
+            extra_info: 'Carga de contenedores de galletas',
+        }
+    });
+
+    // Requerimiento 2: Alicorp Planta Callao (Hoy) - Urgente
+    const req2 = await prisma.requerimiento.create({
+        data: {
+            sede_id: sede3.id,
+            fecha_servicio: hoy,
+            hora_inicio: new Date('1970-01-01T14:00:00Z'),
+            hora_fin: new Date('1970-01-01T22:00:00Z'),
+            cantidad_personal: 2,
+            herramienta: 'Guantes, Lentes, Faja',
+            viatico: 15.00,
+            adicional: 10.00,
+            extra_info: 'Descarga de insumos a granel. Prioridad Alta.',
+        }
+    });
+
+    console.log('✅ Requerimientos creados');
+
+    // 7. Crear Asignaciones y Detalles (NUEVO)
+    console.log('📌 Asignando personal...');
+
+    // Asignación para Nestlé (Pendiente)
+    await prisma.asignacion.create({
+        data: {
+            requerimiento_id: req1.id,
+            estado_trabajo: 'Pendiente',
+            creado_por_id: encargadoUser.id,
+            detalles_asignacion: {
+                create: [
+                    { persona_id: personaTrab1.id, asistencia: 'Pendiente' },
+                    { persona_id: personaTrab3.id, asistencia: 'Pendiente' },
+                ]
+            }
+        }
+    });
+
+    // Asignación para Alicorp (En Progreso/Terminado simulado)
+    await prisma.asignacion.create({
+        data: {
+            requerimiento_id: req2.id,
+            estado_trabajo: 'Pendiente', // Lo mantenemos en pendiente para que el usuario pueda "Terminarlo" en la app
+            creado_por_id: encargadoUser.id,
+            detalles_asignacion: {
+                create: [
+                    { persona_id: personaTrab2.id, asistencia: 'Si' },
+                    { persona_id: personaTrab1.id, asistencia: 'Tardanza' },
+                ]
+            }
+        }
+    });
+
+    console.log('✅ Asignaciones creadas');
+
+    console.log('\n🎉 Seed completado exitosamente con datos de prueba!\n');
     console.log('📧 Credenciales de prueba:');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('👑 ADMIN:');
